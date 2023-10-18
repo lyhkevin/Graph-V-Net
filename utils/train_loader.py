@@ -5,6 +5,7 @@ from einops import rearrange
 from PIL import ImageEnhance, Image, ImageOps
 import random
 import os
+import torchvision
 import torch
 
 def random_flip(img, label):
@@ -88,7 +89,6 @@ class Train_Dataset(data.Dataset):
 
         self.img_transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Resize(self.img_size)
         ])
         self.label_transform = transforms.Compose([
             transforms.ToTensor(),

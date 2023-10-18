@@ -321,37 +321,3 @@ class DINOHead(nn.Module):
         x = nn.functional.normalize(x, dim=-1, p=2)
         x = self.last_layer(x)
         return x, pred
-    
-    
-    
-class ViT_Finetune(nn.Module):
-
-    def __init__(self, num_classes=4, embed_dim=384, depth=6, num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0., norm_layer=nn.LayerNorm):
-        super().__init__()
-        self.num_features = self.embed_dim = embed_dim
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
-        self.blocks = nn.ModuleList([
-            Block(dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
-            for i in range(depth)])
-        self.norm = norm_layer(embed_dim)
-        self.linear = nn.Linear(embed_dim, num_classes)
-        self.softmax = nn.Softmax(dim=-1)
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-
-    def forward(self, x):
-        for blk in self.blocks:
-            x = blk(x)
-        x = self.norm(x)
-        x = self.linear(x)
-        return x

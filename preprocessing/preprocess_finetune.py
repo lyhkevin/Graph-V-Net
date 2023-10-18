@@ -5,6 +5,7 @@ import torchvision.transforms.functional as F
 import os
 import torch
 import tqdm
+from filter import *
 import openslide
 import numpy as np
 from tqdm import tqdm
@@ -26,6 +27,7 @@ class bach_info:
         self.mask = None
         self.w_1x = None # resolution of the WSI in 1x magnification
         self.h_1x = None
+        self.threshold = 0
         self.stride = 4 # stride of the sliding window (in units of patches)
         self.patch_w_1x = 32 # patch size in 1x magnification
         self.patch_h_1x = 32
@@ -53,7 +55,6 @@ class bach_info:
         os.makedirs(self.label_dir, exist_ok=True)
 
 def read_wsi(info):
-
     print("load svs...........")
     print('svs path:', info.svs_path)
     info.slide = openslide.OpenSlide(info.svs_path)
@@ -62,6 +63,23 @@ def read_wsi(info):
     thumbnail.save(info.subject_dir + 'thumbnail.png')
     slide = np.asarray(thumbnail)
     info.slide_np = np.clip(slide, 0, 255).astype(np.uint8)
+    
+def otsu_threshold(info):
+    print('perform otsu threshold..................')
+    grayscale = filter_rgb_to_grayscale(info.slide_np)
+    complement = filter_complement(grayscale)
+    filtered = filter_otsu_threshold(complement)
+    mask = Image.fromarray(filtered)
+    mask.save(info.subject_dir + 'mask.png')
+    info.mask = np.clip(filtered, 0, 1)
+    return
+
+def get_tissue_rate(row_id, col_id, info):
+    x = row_id * info.patch_w_1x
+    y = col_id * info.patch_h_1x
+    mask = info.mask[x:x + info.patch_num * info.patch_w_1x,y:y + info.patch_num * info.patch_h_1x]
+    tissue_rate = int(np.sum(mask) * 100.0 / (mask.shape[0] * mask.shape[1]))
+    return tissue_rate
 
 def read_annotation(info):
     mask = np.zeros([info.h_1x, info.w_1x], dtype=np.uint8)
@@ -91,7 +109,7 @@ def read_annotation(info):
     info.pix_annotation = mask
     np.save(info.subject_dir + 'pix_annotation.npy', info.pix_annotation)
     np.save(info.subject_dir + 'thumbnail.npy', info.slide_np)
-
+    
 def get_soft_label(info, patch):
     count = [0, 0, 0, 0]
     for i in range(patch.shape[0]):
@@ -125,7 +143,7 @@ def grid_with_num(info):
                         color=(128, 128, 128), thickness=1)
     grid_num = Image.fromarray(grid_num)
     grid_num.save(info.subject_dir + 'grid.png')
-
+    
 def get_patch(row_id, col_id, info):
     x = row_id * info.patch_w_1x
     y = col_id * info.patch_h_1x
@@ -142,22 +160,18 @@ def grid_wsi(info):
     grid_with_num(info)
     for row_id in tqdm(range(0, info.num_row_patch, info.stride)):
         for col_id in range(0, info.num_col_patch, info.stride):
-            if row_id + info.patch_num < info.num_row_patch and col_id + info.patch_num < info.num_col_patch:
-                patch = get_patch(row_id, col_id, info)
-                label = info.patch_annotation[row_id:row_id + info.patch_num, col_id:col_id + info.patch_num]
-                patch.save(info.patch_dir + str(row_id) + '_' + str(col_id) + '.png')
-                np.save(info.label_dir + str(row_id) + '_' + str(col_id), label)
-            else:
-                row, col = row_id, col_id
-                if row_id + info.patch_num >= info.num_row_patch:
-                    row = info.num_row_patch - info.patch_num
-                if col_id + info.patch_num >= info.num_col_patch:
-                    col = info.num_col_patch - info.patch_num
+            row, col = row_id, col_id
+            if row_id + info.patch_num >= info.num_row_patch:
+                row = info.num_row_patch - info.patch_num
+            if col_id + info.patch_num >= info.num_col_patch:
+                col = info.num_col_patch - info.patch_num
+            tissue_rate = get_tissue_rate(row, col, info)
+            if tissue_rate > info.threshold:
                 patch = get_patch(row, col, info)
                 label = info.patch_annotation[row:row + info.patch_num, col:col + info.patch_num]
                 patch.save(info.patch_dir + str(row) + '_' + str(col) + '.png')
                 np.save(info.label_dir + str(row) + '_' + str(col), label)
-                
+
 if __name__ == '__main__':
     info = bach_info()
     for svs_path in info.svs_path_all:
@@ -168,4 +182,5 @@ if __name__ == '__main__':
             info.makedir(svs_path, xml_path)
             read_wsi(info)
             read_annotation(info)
+            otsu_threshold(info)
             grid_wsi(info)

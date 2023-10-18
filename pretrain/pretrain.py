@@ -99,10 +99,11 @@ def get_args_parser():
         recommand using a wider range of scale ("--fixed_crops_scale 0.14 1." for example)""")
     parser.add_argument('--flexible_crops_number', type=int, default=8)
     parser.add_argument('--flexible_crops_scale', type=float, nargs='+', default=(0.05, 1))
+    parser.add_argument('--num_classes', default=2, type=int)
     parser.add_argument('--data_path', default='../dataset/pretrain/', type=str, help='Please specify path to the ImageNet training data.')
-    parser.add_argument("--train_samples",default=['A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','06','09','13','16','18','20','test2','test9'])
+    parser.add_argument("--train_samples",default=['A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','06','09','13','16','18','20','test2'])
     parser.add_argument("--val_samples", default=['test3','test6','test7','test8'])
-    parser.add_argument("--test_samples", default=['01','04','05','11','12','17','test1','test5'])
+    parser.add_argument("--test_samples", default=['04', '01'])
     parser.add_argument('--output_dir', default="../weight/pretrain/", type=str, help='Path to save logs and checkpoints.')
     parser.add_argument('--saveckp_freq', default=5, type=int, help='Save checkpoint every x epochs.')
     parser.add_argument('--seed', default=0, type=int, help='Random seed.')
@@ -119,7 +120,6 @@ def train_dino(args):
     utils.fix_random_seeds(args.seed)
     file_path = args.output_dir + "arguments.txt"
     save_args_to_file(args, file_path)
-    print("git:\n  {}\n".format(utils.get_sha()))
     print("\n".join("%s: %s" % (k, str(v)) for k, v in sorted(dict(vars(args)).items())))
     cudnn.benchmark = True
     # ============ preparing data ... ============
@@ -157,15 +157,10 @@ def train_dino(args):
         
     # multi-crop wrapper handles forward with inputs of different resolutions
     student = utils.MultiCropWrapper(student, DINOHead(
-        embed_dim,
-        args.out_dim,
-        use_bn=args.use_bn_in_head,
-        norm_last_layer=args.norm_last_layer,
-    ))
+        embed_dim, args.out_dim, use_bn=args.use_bn_in_head, norm_last_layer=args.norm_last_layer, num_classes = args.num_classes))
     teacher = utils.MultiCropWrapper(
         teacher,
-        DINOHead(embed_dim, args.out_dim, args.use_bn_in_head),
-    )
+        DINOHead(embed_dim, args.out_dim, args.use_bn_in_head, num_classes = args.num_classes))
     # move networks to gpu
     student, teacher = student.cuda(), teacher.cuda()
     teacher_without_ddp = teacher
@@ -260,7 +255,7 @@ def train_one_epoch(student, teacher, teacher_without_ddp, dino_loss, data_loade
                 loss = consistency_loss
             else:
                 indices = torch.nonzero(labels != -1).squeeze()
-                pred = torch.gather(pred, 0, indices.unsqueeze(1).expand(-1, 4))
+                pred = torch.gather(pred, 0, indices.unsqueeze(1).expand(-1, args.num_classes))
                 labels = torch.gather(labels, 0, indices)
                 cls_loss = CrossEntropy_loss(pred, labels)
                 loss = consistency_loss + args.cls_weight[epoch] * cls_loss

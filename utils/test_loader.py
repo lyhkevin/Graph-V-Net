@@ -29,7 +29,6 @@ class Test_Dataset(data.Dataset):
 
         self.img_transform = transforms.Compose([
             transforms.ToTensor(),
-            # transforms.Resize(opt.img_size)
         ])
         self.thumbnail = np.load(self.subject_path + '/thumbnail.npy')
         self.pix_annotation = np.load(self.subject_path + '/pix_annotation.npy')
