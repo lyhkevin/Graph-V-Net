@@ -41,7 +41,7 @@ Our proposed framework consists of two main components:
 </p>
 
 - ### Date Preprocessing
-  (1) Unzip all the data, and create a conda environment for preprocessing. 
+  (1) Unzip all the data, and create a conda environment for preprocessing. For linux:
   ```bash
   conda create --name openslide python=3.8
   conda activate openslide
@@ -50,8 +50,9 @@ Our proposed framework consists of two main components:
   conda install -c conda-forge openslide-python
   pip install -r ./requirements.txt
   ```
-  (2) Run `./preprocessing/preprocessing_pretrain.py` first. This script will generate non-overlapping patches (from 31 labeled WSIs and 9 unlabeled WSIs) for pre-training in `./dataset/pretrain/`.  The file name of a specific patch indicates its spatial location and the class (0, 1, 2, or 3). For instance, `./labeled/01/18_58_3/.png` indicates that the patch locates at the 18th row and 58th column of the WSI, and its class is 3 (invasive carcinoma).  
-  (3) Then, run `./preprocessing/preprocessing_finetune.py` to generate overlapping regions (from 31 labeled WSIs) for fine-tuning and testing in `./dataset/finetune/`. Each cropped region consists of 64 patches and the corresponding soft label is a numpy array with a size of (8,8,4), which indicates the average label of all pixels in those 8*8 patches within the region.
+  To install the OpenSlide package on Windows, please refer to this [tutorial](https://www.youtube.com/watch?v=QntLBvUZR5c).
+  (2) Run `./preprocessing/preprocess_pretrain.py` first. This script will generate non-overlapping patches (from 31 labeled WSIs and 9 unlabeled WSIs) for pre-training in `./dataset/pretrain/`.  The file name of a specific patch indicates its spatial location and the class (0, 1, 2, or 3). For instance, `./labeled/01/18_58_3/.png` indicates that the patch locates at the 18th row and 58th column of the WSI, and its class is 3 (invasive carcinoma).  
+  (3) Then, run `./preprocessing/preprocess_finetune.py` to generate overlapping regions (from 31 labeled WSIs) for fine-tuning and testing in `./dataset/finetune/`. Each cropped region consists of 64 patches and the corresponding soft label is a numpy array with a size of (8,8,4), which indicates the average label of all pixels in those 8*8 patches within the region.
 
 - ### Pre-training
   (1) Create another conda environment (without Openslide package) for pre-training, fine-tuning, and testing. You can install all the dependencies by
@@ -62,7 +63,7 @@ Our proposed framework consists of two main components:
   pip install -r ./requirements.txt
   ```
   (2) To pre-train the patch encoder, run `./pretrain/pretrain.py`. The weights of the patch encoder will be saved in `./weight/pretrain/`. Run `./pretrain/visualize_attention.py` to visualize the attention maps of the patch encoder.
-  We have provided the pre-trained weight on BACH dataset in `./weight/checkpoint.pth` using `--train_samples` (in `./pretrain/pretrain.py`. ) and all the unlabeled WSIs. 
+  We have provided the pre-trained weight on BACH dataset in `./weight/checkpoint.txt` using `--train_samples` (in `./pretrain/pretrain.py`. ) and all the unlabeled WSIs. 
   <p align="center">
       <img src="imgs/attention.png" width="100%"/> <br />
       <em>
@@ -98,12 +99,7 @@ Our proposed framework consists of two main components:
       doi={10.1109/TMI.2023.3317132}}
 ```
 
-## 4. ToDo
-
-- Upload our annotations for the BACH dataset.
-- Upload the pre-trained weight of the patch encoder on our in-house dataset (from Yunnan Cancer Hospital).
-
-## 5. References
+## 4. References
 - ICIAR2018_BACH_Challenge: [[HERE]](https://www.sciencedirect.com/science/article/abs/pii/S1361841518307941)
 
 - DINO: [[HERE]](https://github.com/facebookresearch/dino)
