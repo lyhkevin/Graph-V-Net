@@ -24,7 +24,7 @@ class bach_info:
         self.mask = None
         self.w_1x = None # the resolution of the WSI in 1x magnification
         self.h_1x = None
-        self.threshold = 50 # tissue_rate threshold (lower than the threshold: discard the patch)
+        self.threshold = 20 # tissue_rate threshold (lower than the threshold: discard the patch)
         self.patch_w_1x = 32 # patch size in 1x magnification
         self.patch_h_1x = 32
         self.patch_w_40x = self.patch_w_1x * 16 # patch size in 40x magnification
