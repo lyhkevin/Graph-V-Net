@@ -51,7 +51,7 @@ Our proposed framework consists of two main components:
   pip install -r ./requirements.txt
   ```
   To install the OpenSlide package on Windows, please refer to this [tutorial](https://www.youtube.com/watch?v=QntLBvUZR5c).
-  (2) Run `./preprocessing/preprocess_pretrain.py` first. This script will generate non-overlapping patches (from 31 labeled WSIs and 9 unlabeled WSIs) for pre-training in `./dataset/pretrain/`.  The file name of a specific patch indicates its spatial location and the class (0, 1, 2, or 3). For instance, `./labeled/01/18_58_3/.png` indicates that the patch locates at the 18th row and 58th column of the WSI, and its class is 3 (invasive carcinoma).  
+  (2) Run `./preprocessing/preprocess_pretrain.py` first. This script will generate non-overlapping patches (from 31 labeled WSIs and 9 unlabeled WSIs) for pre-training in `./dataset/pretrain/`.  The file name of a specific patch indicates its spatial location and the class (0, 1, 2, or 3). For instance, `./labeled/01/18_58_1.png` indicates that the patch locates at the 18th row and 58th column of the WSI, and its class is 1 (cancerous).  
   (3) Then, run `./preprocessing/preprocess_finetune.py` to generate overlapping regions (from 31 labeled WSIs) for fine-tuning and testing in `./dataset/finetune/`. Each cropped region consists of 64 patches and the corresponding soft label is a numpy array with a size of (8,8,4), which indicates the average label of all pixels in those 8*8 patches within the region.
 
 - ### Pre-training
